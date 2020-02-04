@@ -1,0 +1,144 @@
+<!-- START: ratenkauf by easyCredit (head) -->
+{%- if template == 'product' -%}
+  {%- assign installment_purchase_min_price = 200 -%}
+  {%- assign installment_purchase_max_price = 5000 -%}
+
+  {%- if product.price_decimal >= installment_purchase_min_price and product.price_decimal <= installment_purchase_max_price -%}
+    <style>
+      .m-installment-purchase-widget {
+        position: fixed;
+        display: table;
+        box-sizing: border-box;
+        top: 25vh;
+        right: 0;
+        z-index: 1000;
+        height: 43px;
+        border-width: 1px 0px 1px 1px;
+        border-style: solid;
+        border-color: #015CAA;
+        border-radius: 3px 0 0 3px;
+        padding: 8px 5px;
+        padding-bottom: 4px;
+        background-color: white;
+        /* shadow and fx  */
+        -webkit-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.42);
+        -moz-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.42);
+        box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.42);
+      }
+
+
+      .m-installment-purchase-widget.is-closed {
+        border-left-width: 8px;
+        cursor: pointer;
+      }
+      .m-installment-purchase-widget.is-closed .m-installment-purchase-widget__close,
+      .m-installment-purchase-widget.is-closed .m-installment-purchase-widget__text-link {
+        display: none;
+      }
+
+
+      .m-installment-purchase-widget.is-hidden {
+        display: none;
+      }
+
+      .m-installment-purchase-widget__image-container {
+        display: table-cell;
+        vertical-align: middle;
+        height: 24px;
+      }
+
+      .m-installment-purchase-widget__image-container img {
+        height: 24px;
+      }
+
+      .m-installment-purchase-widget__text-link {
+        display: table-cell;
+        height: 24px;
+        padding-top: 2px;
+      }
+
+      .m-installment-purchase-widget__close {
+        font-family: Arial, Helvetica, sans-serif;
+        position: absolute;
+        top: -8px;
+        left: -5px;
+        cursor: pointer;
+        background-color: #015CAA;
+        border-radius: 50%;
+        height: 15px;
+        width: 15px;
+      }
+
+      .m-installment-purchase-widget__close div {
+        color: white;
+        vertical-align: text-top;
+        text-align: center;
+        margin-top: -5px;
+      }
+
+
+      .m-installment-purchase-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        padding: 20px;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+        opacity: 1;
+        transition: opacity .4s, height 0s ease-in;
+        z-index: 5000;
+      }
+
+      .m-installment-purchase-modal.is-hidden {
+        opacity: 0;
+        height: 0;
+        transition: opacity .4s, height 2s ease-in;
+      }
+
+      .m-installment-purchase-modal__close {
+        position: absolute;
+        right: 8px;
+        top: 5px;
+        width: 24px;
+        height: 24px;
+        text-align: center;
+        line-height: 24px;
+        font-size: 24px;
+        display: block;
+        cursor: pointer;
+      }
+
+      .m-installment-purchase-modal__canvas {
+        position: relative;
+        margin: 0 auto;
+        height: 100%;
+        width: 60%;
+      }
+
+      .m-installment-purchase-modal__iframe-container {
+        padding: 40px 10px 10px;
+        height: 100%;
+        background: #FFF;
+      }
+
+      .m-installment-purchase-modal__iframe-container iframe {
+        width: 100%;
+        height: 100%;
+      }
+
+      @media (min-width: 444px ) and (max-width: 750px){
+        .m-installment-purchase-modal__canvas {
+          width: 90%;
+        }
+      }
+      @media (max-width: 443px){
+        .m-installment-purchase-modal__canvas {
+          width: 100%;
+        }
+      }
+    </style>
+  {%- endif -%}
+{%- endif -%}
+<!-- END: ratenkauf by easyCredit (head) -->

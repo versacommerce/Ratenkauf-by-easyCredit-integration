@@ -1,0 +1,285 @@
+<!-- START: ratenkauf by easyCredit (body) -->
+{%- if template == 'product' -%}
+  {%- assign installment_purchase_min_price = 200 -%}
+  {%- assign installment_purchase_max_price = 5000 -%}
+
+  {%- if product.price_decimal >= installment_purchase_min_price and product.price_decimal <= installment_purchase_max_price -%}
+    <div class="m-installment-purchase-widget is-closed is-hidden" data-m-installment-purchase-widget>
+      <div class="m-installment-purchase-widget__close">
+        <div>x</div>
+      </div>
+      <div class="m-installment-purchase-widget__content">
+        <div class="m-installment-purchase-widget__image-container">
+          <img src="https://static.easycredit.de/content/image/logo/ratenkauf_42_55.png" alt="easyCredit Ratenkauf Logo" />
+        </div>
+        <div class="m-installment-purchase-widget__text-link">
+          <a href="#"><strong style="margin-left: 5px;">Finanzierung <span class="installments">möglich</span></strong></a>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="m-installment-purchase-modal is-hidden" data-m-installment-purchase-modal>
+      <div class="m-installment-purchase-modal__canvas">
+        <div class="m-installment-purchase-modal__close">
+          &times;
+        </div>
+
+        <div class="m-installment-purchase-modal__iframe-container">
+          <iframe
+              src="https://ratenkauf.easycredit.de/ratenkauf/content/intern/paymentPageBeispielrechnung.jsf?shopKennung={{ integration['Webshop ID'] }}&bestellwert={{product.price_decimal}}"
+              frameborder="0"scrolling="yes">
+            Leider unterstützt Ihr Browser keine Iframes. Bitte versuchen Sie es erneut mit einer moderneren Software.
+          </iframe>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      (function() {
+        'use strict';
+
+        var EasyCreditInstallmentPurchase = function EasyCreditInstallmentPurchase(shopTheme, webshopId, productId, productPrice, locale, currency) {
+          this._initialize(shopTheme, webshopId, productId, productPrice, locale, currency);
+        };
+
+        EasyCreditInstallmentPurchase.prototype = {
+          _initialize: function(shopTheme, webshopId, productId, productPrice) {
+            this.shopTheme = shopTheme;
+            this.webshopId = webshopId;
+            this.productId = productId;
+            this.productPrice = productPrice;
+            this.locale = locale;
+            this.currency = currency;
+
+            this._initLocalStorage();
+            this._initNumberFormatter();
+            this._initModal();
+            this._initWidget();
+
+            return this;
+          },
+
+          _initLocalStorage: function() {
+            this._closedByUserStorageKey = 'easycredit-closed-by-user';
+            this._productPlanStorageKey = `easycredit-plan-${this.productId}`;
+          },
+
+          _initNumberFormatter: function() {
+            this.formatter = new Intl.NumberFormat(this.locale, {
+              style: 'currency',
+              currency: this.currency,
+            });
+          },
+
+          _initModal: function() {
+            var self = this;
+
+            self._modal = document.querySelector('[data-m-installment-purchase-modal]');
+
+            if(self._modal) {
+              var closeBtn = self._modal.querySelector('.m-installment-purchase-modal__close');
+              closeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                self.hideModal();
+              });
+            } else {
+              console.error('Could not find Modal.');
+            }
+          },
+
+          _initWidget: function() {
+            if (this.shopTheme.match(/astor/)) {
+              this._initAstorWidget();
+            } else {
+              this._initGeneralWidget();
+            }
+          },
+
+          _initGeneralWidget: function() {
+            var self = this;
+
+            self._widget = document.querySelector('[data-m-installment-purchase-widget]');
+
+            if (self._widget) {
+              if (!self.isClosedByUser()) {
+                self.openWidget();
+              }
+
+              self._widget.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                var closeBtn = self._widget.querySelector('.m-installment-purchase-widget__close');
+                if (e.target.parentNode == closeBtn) {
+                  localStorage.setItem(self._closedByUserStorageKey, true);
+                  self.closeWidget();
+                } else {
+                  self.openWidget();
+                }
+              });
+
+              try {
+                var installmentsText = self._widget.querySelector('.installments');
+                self.installmentPlanRate().then(function(rate){
+                  installmentsText.innerHTML = `ab ${self.formatter.format(rate)} / Monat`;
+                });
+              } catch(e) {
+                console.error('Could not set installments text:');
+                console.error(e);
+              }
+
+              var modalOpener = self._widget.querySelector('.m-installment-purchase-widget__text-link a');
+              modalOpener.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                self.showModal();
+              });
+
+              self.showWidget();
+            } else {
+              console.error('Could not find Widget.')
+            }
+          },
+
+          _initAstorWidget: function() {
+            var self = this;
+
+            self._astor_widget = document.querySelector('[data-ratenkauf]');
+
+            if (self._astor_widget) {
+              try {
+                var installmentsText = self._astor_widget.querySelector('.installments');
+                self.installmentPlanRate().then(function(rate){
+                  installmentsText.innerHTML = `ab ${self.formatter.format(rate)} / Monat`;
+                });
+              } catch(e) {
+                console.error('Could not set installments text:');
+                console.error(e);
+              }
+
+              var modalOpener = self._astor_widget.querySelector('.ratenkauf__text-link a');
+              modalOpener.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                self.showModal();
+              });
+
+              self._astor_widget.style.display = 'block';
+            } else {
+              console.error('Could not find Astor Widget.')
+            }
+          },
+
+          _fetchInstallmentPurchasePlan: function() {
+            var installmentPlanUrl = `https://ratenkauf.easycredit.de/ratenkauf-ws/rest/v1/modellrechnung/guenstigsterRatenplan?webshopId=${this.webshopId}&finanzierungsbetrag=${this.productPrice}`;
+            return this._jsonp(installmentPlanUrl);
+          },
+
+          installmentPlanRate: function() {
+            var self = this;
+            var rate = localStorage.getItem(self._productPlanStorageKey);
+
+            return new Promise(function(resolve, reject) {
+              if (rate) {
+                resolve(rate);
+              } else {
+                self._fetchInstallmentPurchasePlan().then(function(installmentPlan){
+                  rate = installmentPlan['betragRate'];
+
+                  if (rate) {
+                    localStorage.setItem(self._productPlanStorageKey, rate);
+                    resolve(rate);
+                  } else {
+                    reject('Could not get installment plan rate.');
+                  }
+                })
+              }
+            });
+          },
+
+          isClosedByUser: function() {
+            var isClosedByUser = localStorage.getItem(this._closedByUserStorageKey);
+            return !(isClosedByUser == null || isClosedByUser === undefined);
+          },
+
+          hideModal: function() {
+            this._modal.classList.add('is-hidden');
+          },
+
+          showModal: function() {
+            this._modal.classList.remove('is-hidden');
+          },
+
+          isWidgetClosed: function() {
+            return this._widget.classList.contains('is-closed');
+          },
+
+          closeWidget: function() {
+            this._widget.classList.add('is-closed');
+          },
+
+          openWidget: function() {
+            this._widget.classList.remove('is-closed');
+          },
+
+          isWidgetHidden: function() {
+            return this._widget.classList.contains('is-hidden');
+
+            return false;
+          },
+
+          hideWidget: function() {
+            this._widget.classList.add('is-hidden');
+          },
+
+          showWidget: function() {
+            this._widget.classList.remove('is-hidden');
+          },
+
+          _jsonp: function(uri) {
+            return new Promise(function(resolve, reject) {
+              var callbackId = '_' + Math.round(10000 * Math.random());
+              var callbackMethodName = `jsonp_callback_${callbackId}`;
+              window[callbackMethodName] = function(data) {
+                delete window[callbackMethodName];
+                var element = document.getElementById(callbackId);
+                element.parentNode.removeChild(element);
+                resolve(data);
+              }
+
+              var src = `${uri}&callback=${callbackMethodName}`;
+              var script = document.createElement('script');
+              script.src = src;
+              script.id = callbackId;
+              script.addEventListener('error', reject);
+              (document.getElementsByTagName('head')[0] || document.body || document.documentElement).appendChild(script)
+            });
+          },
+        };
+
+        window.EasyCreditInstallmentPurchase = EasyCreditInstallmentPurchase || {};
+
+        try {
+          var theme = '{{ shop.current_design }}';
+          var sandboxTheme = '{{ shop.current_sandbox_design }}';
+
+          if (location.href.indexOf('.sandbox.versacommerce') !== -1) {
+            theme = sandboxTheme;
+          }
+
+          var webshopId = '{{ integration['Webshop ID'] }}';
+          var productId = '{{ product.id }}';
+          var productPrice = '{{ product.price_decimal }}';
+          var locale = '{{ shop.locale }}';
+          var currency = '{{ shop.currency }}';
+
+          window.EasyCreditInstallmentPurchase = new EasyCreditInstallmentPurchase(theme, webshopId, productId, productPrice, locale, currency);
+        } catch(e) {
+          console.error(e);
+        }
+      })();
+    </script>
+  {%- endif -%}
+{%- endif -%}
+<!-- END: ratenkauf by easyCredit (body) -->
