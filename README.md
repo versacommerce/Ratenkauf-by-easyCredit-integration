@@ -1,5 +1,5 @@
 [<img src="versacommerce.png" width="250px" align="right" alt="VersaCommerce.de">](https://www.versacommerce.de/?utm_source=github)
-[<img src="easycredit.png" width="90px" align="right" alt="easycredit.de">](https://www.easycredit.de/?utm_source=www.versacommerce.de)
+[<img src="easycredit.png" width="175px" align="right" alt="easycredit.de">](https://www.easycredit.de/?utm_source=www.versacommerce.de)
 
 [VersaCommerce] [integration] [javascript] [RatenkaufByEasyCredit]
 
